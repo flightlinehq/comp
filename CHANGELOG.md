@@ -1,3 +1,16 @@
+# [3.7.0](https://github.com/trycompai/comp/compare/v3.6.0...v3.7.0) (2026-03-16)
+
+
+### Bug Fixes
+
+* **auth:** add rate limiting for admin endpoints ([f81148b](https://github.com/trycompai/comp/commit/f81148babdd66b05a55d3ce4b6eaaeb07cef4d50))
+* fall back to workflow scanning when code scanning API returns 403 ([#2311](https://github.com/trycompai/comp/issues/2311)) ([5a5fe85](https://github.com/trycompai/comp/commit/5a5fe854cc6c6f448072fcc4cf37f641f2a319a3))
+
+
+### Features
+
+* **admin-organizations:** add admin dashboard ([e5318ec](https://github.com/trycompai/comp/commit/e5318ecc8372b7f2bea9f100eb4026082ecb9a4b))
+
 # [3.6.0](https://github.com/trycompai/comp/compare/v3.5.0...v3.6.0) (2026-03-14)
 
 
