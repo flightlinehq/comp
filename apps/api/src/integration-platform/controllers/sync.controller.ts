@@ -13,7 +13,11 @@ import { ApiTags, ApiSecurity } from '@nestjs/swagger';
 import { HybridAuthGuard } from '../../auth/hybrid-auth.guard';
 import { PermissionGuard } from '../../auth/permission.guard';
 import { RequirePermission } from '../../auth/require-permission.decorator';
-import { OrganizationId } from '../../auth/auth-context.decorator';
+import {
+  OrganizationId,
+  AuthContext,
+} from '../../auth/auth-context.decorator';
+import type { AuthContext as AuthContextType } from '../../auth/types';
 import { db } from '@db';
 import { ConnectionRepository } from '../repositories/connection.repository';
 import { CredentialVaultService } from '../services/credential-vault.service';
@@ -24,7 +28,9 @@ import {
   type RampUser,
   type RampUserStatus,
   type RampUsersResponse,
+  type RoleMappingEntry,
 } from '@trycompai/integration-platform';
+import { RampRoleMappingService } from '../services/ramp-role-mapping.service';
 
 interface GoogleWorkspaceUser {
   id: string;
@@ -103,6 +109,7 @@ export class SyncController {
     private readonly connectionRepository: ConnectionRepository,
     private readonly credentialVaultService: CredentialVaultService,
     private readonly oauthCredentialsService: OAuthCredentialsService,
+    private readonly rampRoleMappingService: RampRoleMappingService,
   ) {}
 
   /**
@@ -977,6 +984,7 @@ export class SyncController {
   async syncRampEmployees(
     @OrganizationId() organizationId: string,
     @Query('connectionId') connectionId: string,
+    @AuthContext() authContext: AuthContextType,
   ) {
     if (!connectionId) {
       throw new HttpException(
@@ -1081,7 +1089,7 @@ export class SyncController {
         do {
           const url = nextUrl
             ? new URL(nextUrl)
-            : new URL('https://api.ramp.com/developer/v1/users');
+            : new URL('https://demo-api.ramp.com/developer/v1/users');
           if (!nextUrl) {
             url.searchParams.set('page_size', '100');
             if (status) {
@@ -1208,6 +1216,112 @@ export class SyncController {
       `Found ${activeUsers.length} active, ${inactiveUsers.length} inactive, and ${suspendedUsers.length} suspended Ramp users`,
     );
 
+    // Load role mapping from connection variables
+    const connectionVars = (connection.variables ?? {}) as Record<
+      string,
+      unknown
+    >;
+    let roleMapping = Array.isArray(connectionVars.role_mapping)
+      ? (connectionVars.role_mapping as RoleMappingEntry[])
+      : null;
+
+    if (!roleMapping) {
+      const isAutomatedSync = authContext.authType === 'service';
+
+      if (!isAutomatedSync) {
+        // Manual sync — prompt user to configure mapping via UI
+        return {
+          success: false,
+          requiresRoleMapping: true,
+          message:
+            'Role mapping is not configured. Please configure role mapping before syncing.',
+        };
+      }
+
+      // Automated sync (cron) — auto-generate default mapping
+      const allRampRolesForDefault = [
+        ...new Set(
+          activeUsers
+            .map((u) => u.role)
+            .filter((r): r is string => Boolean(r)),
+        ),
+      ];
+
+      if (allRampRolesForDefault.length === 0) {
+        this.logger.warn(
+          'No Ramp roles found to auto-generate mapping',
+        );
+        return {
+          success: true,
+          totalFound: 0,
+          imported: 0,
+          skipped: 0,
+          deactivated: 0,
+          reactivated: 0,
+          errors: 0,
+          details: [],
+        };
+      }
+
+      const defaultEntries =
+        this.rampRoleMappingService.getDefaultMapping(
+          allRampRolesForDefault,
+        );
+
+      await this.rampRoleMappingService.ensureCustomRolesExist(
+        organizationId,
+        defaultEntries,
+      );
+      await this.rampRoleMappingService.saveMapping(
+        connectionId,
+        defaultEntries,
+      );
+
+      roleMapping = defaultEntries;
+
+      this.logger.log(
+        `Auto-generated default role mapping for Ramp sync (${defaultEntries.length} roles)`,
+      );
+    }
+
+    // Discover all Ramp roles in this batch and auto-create mappings for unknown ones
+    const allRampRoles = new Set(
+      activeUsers
+        .map((u) => u.role)
+        .filter((r): r is string => Boolean(r)),
+    );
+    const mappedRoles = new Set(roleMapping.map((m) => m.rampRole));
+    const newRoles = [...allRampRoles].filter((r) => !mappedRoles.has(r));
+
+    if (newRoles.length > 0) {
+      this.logger.log(
+        `Found ${newRoles.length} new Ramp roles not in mapping: ${newRoles.join(', ')}`,
+      );
+
+      const newEntries =
+        this.rampRoleMappingService.getDefaultMapping(newRoles);
+
+      // Create custom roles in DB for new entries
+      await this.rampRoleMappingService.ensureCustomRolesExist(
+        organizationId,
+        newEntries,
+      );
+
+      // Add to mapping and save
+      const updatedMapping = [...roleMapping, ...newEntries];
+      await this.rampRoleMappingService.saveMapping(
+        connectionId,
+        updatedMapping,
+      );
+
+      // Use the updated mapping
+      roleMapping.push(...newEntries);
+    }
+
+    const roleMappingLookup = new Map(
+      roleMapping.map((m) => [m.rampRole, m.compRole]),
+    );
+
     const results = {
       imported: 0,
       skipped: 0,
@@ -1258,31 +1372,61 @@ export class SyncController {
         }
 
         if (existingMember) {
-          // Backfill external ID if not set
+          const mappedRole =
+            roleMappingLookup.get(rampUser.role ?? '') ?? 'employee';
+
+          // Build update data: backfill external ID + update role if changed
+          const updateData: Record<string, unknown> = {};
+
           if (
             rampUser.id &&
             (!existingMember.externalUserId ||
               existingMember.externalUserSource !== 'ramp')
           ) {
-            await db.member.update({
-              where: { id: existingMember.id },
-              data: {
-                externalUserId: rampUser.id,
-                externalUserSource: 'ramp',
-              },
-            });
+            updateData.externalUserId = rampUser.id;
+            updateData.externalUserSource = 'ramp';
+          }
+
+          // Update role if it changed (but don't downgrade privileged roles)
+          const currentRoles = existingMember.role
+            .split(',')
+            .map((r) => r.trim().toLowerCase());
+          const isPrivileged =
+            currentRoles.includes('owner') ||
+            currentRoles.includes('admin') ||
+            currentRoles.includes('auditor');
+
+          if (!isPrivileged && existingMember.role !== mappedRole) {
+            updateData.role = mappedRole;
           }
 
           if (existingMember.deactivated) {
+            updateData.deactivated = false;
+            updateData.isActive = true;
+
             await db.member.update({
               where: { id: existingMember.id },
-              data: { deactivated: false, isActive: true },
+              data: updateData,
             });
             results.reactivated++;
             results.details.push({
               email: normalizedEmail,
               status: 'reactivated',
               reason: 'User is active again in Ramp',
+            });
+          } else if (Object.keys(updateData).length > 0) {
+            await db.member.update({
+              where: { id: existingMember.id },
+              data: updateData,
+            });
+            results.skipped++;
+            results.details.push({
+              email: normalizedEmail,
+              status: 'skipped',
+              reason:
+                updateData.role
+                  ? `Role updated to ${mappedRole}`
+                  : 'Already a member',
             });
           } else {
             results.skipped++;
@@ -1314,11 +1458,14 @@ export class SyncController {
           });
         }
 
+        const mappedRole =
+          roleMappingLookup.get(rampUser.role ?? '') ?? 'employee';
+
         await db.member.create({
           data: {
             organizationId,
             userId: existingUser.id,
-            role: 'employee',
+            role: mappedRole,
             isActive: true,
             externalUserId: rampUser.id || null,
             externalUserSource: rampUser.id ? 'ramp' : null,
@@ -1418,6 +1565,12 @@ export class SyncController {
     this.logger.log(
       `Ramp sync complete: ${results.imported} imported, ${results.reactivated} reactivated, ${results.deactivated} deactivated, ${results.skipped} skipped, ${results.errors} errors`,
     );
+
+    // Update lastSyncAt on the connection
+    await db.integrationConnection.update({
+      where: { id: connectionId },
+      data: { lastSyncAt: new Date() },
+    });
 
     return {
       success: true,
