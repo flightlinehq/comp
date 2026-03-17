@@ -1272,6 +1272,10 @@ export class SyncController {
 
       if (!isAutomatedSync) {
         // Manual sync — prompt user to configure mapping via UI
+        await this.syncLoggerService.completeLog(logId, {
+          requiresRoleMapping: true,
+          message: 'Role mapping is not configured',
+        });
         return {
           success: false,
           requiresRoleMapping: true,
@@ -1293,8 +1297,7 @@ export class SyncController {
         this.logger.warn(
           'No Ramp roles found to auto-generate mapping',
         );
-        return {
-          success: true,
+        const emptyResult = {
           totalFound: 0,
           imported: 0,
           skipped: 0,
@@ -1303,6 +1306,8 @@ export class SyncController {
           errors: 0,
           details: [],
         };
+        await this.syncLoggerService.completeLog(logId, emptyResult);
+        return { success: true, ...emptyResult };
       }
 
       const defaultEntries =
