@@ -184,6 +184,36 @@ export class RampRoleMappingService {
   }
 
   /**
+   * Save only discovered roles without touching the role_mapping field
+   */
+  async saveDiscoveredRoles(
+    connectionId: string,
+    discoveredRoles: Array<{ role: string; userCount: number }>,
+  ): Promise<void> {
+    const connection = await db.integrationConnection.findUnique({
+      where: { id: connectionId },
+      select: { variables: true },
+    });
+
+    const existingVariables = (connection?.variables ?? {}) as Record<
+      string,
+      unknown
+    >;
+
+    const updatedVariables: Record<string, unknown> = {
+      ...existingVariables,
+      discovered_roles: discoveredRoles,
+    };
+
+    await db.integrationConnection.update({
+      where: { id: connectionId },
+      data: {
+        variables: updatedVariables as unknown as Prisma.InputJsonValue,
+      },
+    });
+  }
+
+  /**
    * Get cached discovered roles from connection variables
    */
   async getCachedDiscoveredRoles(

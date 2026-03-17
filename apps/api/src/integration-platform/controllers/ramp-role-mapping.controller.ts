@@ -88,13 +88,17 @@ export class RampRoleMappingController {
           .map(([role, userCount]) => ({ role, userCount }))
           .sort((a, b) => b.userCount - a.userCount);
 
-        // Cache the discovered roles
+        // Cache the discovered roles (preserve existing mapping if any)
         const existingMapping = await this.roleMappingService.getSavedMapping(connectionId);
-        await this.roleMappingService.saveMapping(
-          connectionId,
-          existingMapping ?? [],
-          discoveredRoles,
-        );
+        if (existingMapping) {
+          await this.roleMappingService.saveMapping(
+            connectionId,
+            existingMapping,
+            discoveredRoles,
+          );
+        } else {
+          await this.roleMappingService.saveDiscoveredRoles(connectionId, discoveredRoles);
+        }
 
         await this.syncLoggerService.completeLog(logId, {
           rolesDiscovered: discoveredRoles.length,
