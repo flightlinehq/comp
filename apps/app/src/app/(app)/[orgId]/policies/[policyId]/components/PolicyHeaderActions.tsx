@@ -1,7 +1,6 @@
 'use client';
 
 import { useAuditLogs } from '@/hooks/use-audit-logs';
-import { generatePolicyPDF } from '@/lib/pdf-generator';
 import { Button } from '@trycompai/ui/button';
 import { useSWRConfig } from 'swr';
 import {
@@ -177,6 +176,7 @@ export function PolicyHeaderActions({
       const approvalLogs = auditLogs.filter((log) =>
         log.description?.toLowerCase().includes('approved'),
       );
+      const { generatePolicyPDF } = await import('@/lib/pdf-generator');
       generatePolicyPDF(policyContent, approvalLogs, policy.name || 'Policy Document');
     } catch (error) {
       console.error('Error downloading policy PDF:', error);
