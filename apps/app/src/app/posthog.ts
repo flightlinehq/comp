@@ -1,9 +1,9 @@
-import { Properties } from 'posthog-js';
-import { PostHog } from 'posthog-node';
+import type { Properties } from 'posthog-js';
+import type { PostHog } from 'posthog-node';
 
 let posthogInstance: PostHog | null = null;
 
-function getPostHogClient(): PostHog | null {
+async function getPostHogClient(): Promise<PostHog | null> {
   if (posthogInstance) {
     return posthogInstance;
   }
@@ -12,6 +12,7 @@ function getPostHogClient(): PostHog | null {
   const apiHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
 
   if (apiKey && apiHost) {
+    const { PostHog } = await import('posthog-node');
     posthogInstance = new PostHog(apiKey, {
       flushAt: 1,
       flushInterval: 0,
@@ -22,11 +23,10 @@ function getPostHogClient(): PostHog | null {
   return null;
 }
 
-// Export the getter function as the primary way to access the client
 export { getPostHogClient };
 
 export async function track(distinctId: string, eventName: string, properties?: Properties) {
-  const client = getPostHogClient();
+  const client = await getPostHogClient();
   if (!client) return;
 
   client.capture({
@@ -37,7 +37,7 @@ export async function track(distinctId: string, eventName: string, properties?: 
 }
 
 export async function identify(distinctId: string, properties?: Properties) {
-  const client = getPostHogClient();
+  const client = await getPostHogClient();
   if (!client) return;
 
   client.identify({
@@ -47,7 +47,7 @@ export async function identify(distinctId: string, properties?: Properties) {
 }
 
 export async function getFeatureFlags(distinctId: string) {
-  const client = getPostHogClient();
+  const client = await getPostHogClient();
   if (!client) return {};
 
   const flags = await client.getAllFlags(distinctId);
