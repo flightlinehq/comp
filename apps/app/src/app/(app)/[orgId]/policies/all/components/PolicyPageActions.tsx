@@ -2,7 +2,6 @@
 
 import { CreatePolicySheet } from '@/components/sheets/create-policy-sheet';
 import { api } from '@/lib/api-client';
-import { downloadAllPolicies } from '@/lib/pdf-generator';
 import { Add, Download } from '@carbon/icons-react';
 import type { AuditLog, Member, Organization, Policy, User } from '@db';
 import { Button, HStack } from '@trycompai/design-system';
@@ -43,6 +42,7 @@ export function PolicyPageActions({ policies }: PolicyPageActionsProps) {
         }),
       );
       const policyLogs = Object.fromEntries(logsEntries);
+      const { downloadAllPolicies } = await import('@/lib/pdf-generator');
       downloadAllPolicies(policies, policyLogs);
     } finally {
       setIsDownloadingAll(false);
