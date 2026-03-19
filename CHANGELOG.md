@@ -1,3 +1,16 @@
+## [3.10.2](https://github.com/trycompai/comp/compare/v3.10.1...v3.10.2) (2026-03-19)
+
+
+### Bug Fixes
+
+* **app:** add Suspense boundary for useSearchParams in SingleTask ([c99dea0](https://github.com/trycompai/comp/commit/c99dea082216dc08f0d49526b27e4cd73fce33c3))
+* **app:** dynamically import jspdf in PolicyPageActions ([13f692e](https://github.com/trycompai/comp/commit/13f692e4ad0a7c96caca83bc656b401cada56c53))
+* **app:** dynamically import jspdf to fix turbopack build ([d361db1](https://github.com/trycompai/comp/commit/d361db1a5e85c1aa51331568b21ffe6bf8cf0e4c))
+* **app:** lazy-load jspdf in pdf-generator to fix turbopack SSR build ([01c827d](https://github.com/trycompai/comp/commit/01c827d96122c8efa156bb6e526c8d333dd36a27))
+* **app:** route findings links to findings tab on task and document pages ([4cccdf6](https://github.com/trycompai/comp/commit/4cccdf65540f3b2b657f6e803e6d696144b6becc))
+* **app:** show create finding button in empty findings state ([be938b7](https://github.com/trycompai/comp/commit/be938b766681b19675bc91b95463046b5fd18550))
+* **app:** use dynamic import for posthog-node to avoid async_hooks error ([d9879bb](https://github.com/trycompai/comp/commit/d9879bb8bff66304500076fc8977d2995840c7e2))
+
 ## [3.10.1](https://github.com/trycompai/comp/compare/v3.10.0...v3.10.1) (2026-03-19)
 
 
