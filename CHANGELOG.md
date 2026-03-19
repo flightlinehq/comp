@@ -1,3 +1,12 @@
+## [3.10.1](https://github.com/trycompai/comp/compare/v3.10.0...v3.10.1) (2026-03-19)
+
+
+### Bug Fixes
+
+* add Pending status to people table filter ([0879078](https://github.com/trycompai/comp/commit/0879078412f826d96dcb86ee74675beb9bc6337e))
+* **app:** fix paragraph breaks issue in task description display ([#2327](https://github.com/trycompai/comp/issues/2327)) ([0a96a65](https://github.com/trycompai/comp/commit/0a96a651262c3ba58b1089978b2e5f35cb768d0b))
+* **integrations:** stop GWS sync from reactivating deactivated members ([826875f](https://github.com/trycompai/comp/commit/826875f05d4afd2f9ca0b5ef16119163739e6673))
+
 # [3.10.0](https://github.com/trycompai/comp/compare/v3.9.0...v3.10.0) (2026-03-19)
 
 
