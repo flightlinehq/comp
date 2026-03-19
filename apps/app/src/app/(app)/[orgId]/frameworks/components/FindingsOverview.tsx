@@ -75,11 +75,11 @@ function FindingsList({
                   <Link
                     href={
                       finding.task
-                        ? `/${organizationId}/tasks/${finding.task.id}#finding-${finding.id}`
+                        ? `/${organizationId}/tasks/${finding.task.id}?tab=findings`
                         : finding.evidenceFormType
-                          ? `/${organizationId}/documents/${finding.evidenceFormType}`
+                          ? `/${organizationId}/documents/${finding.evidenceFormType}?tab=findings`
                           : finding.evidenceSubmission
-                            ? `/${organizationId}/documents/${finding.evidenceSubmission.formType}`
+                            ? `/${organizationId}/documents/${finding.evidenceSubmission.formType}?tab=findings`
                             : `/${organizationId}/frameworks`
                     }
                   >

@@ -2,6 +2,7 @@ import { CompanyFormPageClient } from '@/app/(app)/[orgId]/documents/components/
 import { Breadcrumb, PageLayout } from '@trycompai/design-system';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 import { evidenceFormDefinitions, evidenceFormTypeSchema } from '../forms';
 
 export default async function CompanyFormDetailPage({
@@ -30,10 +31,12 @@ export default async function CompanyFormDetailPage({
           { label: formDefinition.title, isCurrent: true },
         ]}
       />
-      <CompanyFormPageClient
-        organizationId={orgId}
-        formType={parsedType.data}
-      />
+      <Suspense>
+        <CompanyFormPageClient
+          organizationId={orgId}
+          formType={parsedType.data}
+        />
+      </Suspense>
     </PageLayout>
   );
 }

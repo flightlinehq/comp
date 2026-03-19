@@ -39,7 +39,7 @@ import {
 } from '@trycompai/design-system';
 import { CheckCircle2, Clock, Download, RefreshCw, SendHorizontal, Trash2, XCircle } from 'lucide-react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Comments } from '../../../../../../components/comments/Comments';
@@ -77,8 +77,10 @@ export function SingleTask({
   evidenceApprovalEnabled = false,
 }: SingleTaskProps) {
   const params = useParams();
+  const searchParams = useSearchParams();
   const orgId = params.orgId as string;
   const taskId = params.taskId as string;
+  const defaultTab = searchParams.get('tab') || 'overview';
 
   const {
     task,
@@ -310,7 +312,7 @@ export function SingleTask({
       )}
 
       {/* Tabs */}
-      <Tabs defaultValue="overview">
+      <Tabs defaultValue={defaultTab}>
         <Stack gap="lg">
           <TabsList variant="underline">
             <TabsTrigger value="overview">Overview</TabsTrigger>

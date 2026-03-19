@@ -34,9 +34,6 @@ export function DocumentFindingsSection({
   const { data: activeMember } = useActiveMember();
   const isAuditor = activeMember?.role?.includes('auditor') ?? false;
 
-  // Only auditors can see findings on document pages
-  if (!isAuditor) return null;
-
   const canCreateFinding = hasPermission('finding', 'create') && isAuditor;
   const canUpdateFinding = hasPermission('finding', 'update');
   const isMeeting = formType === 'meeting';
@@ -171,8 +168,12 @@ export function DocumentFindingsSection({
     );
   }
 
-  if (!canCreateFinding && sortedFindings.length === 0) {
-    return null;
+  if (sortedFindings.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+        <p className="text-sm">No findings for this document</p>
+      </div>
+    );
   }
 
   return (
