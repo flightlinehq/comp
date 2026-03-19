@@ -172,6 +172,11 @@ export function DocumentFindingsSection({
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
         <p className="text-sm">No findings for this document</p>
+        {canCreateFinding && (
+          <div className="mt-3">
+            <CreateFindingButton evidenceFormType={formType} onSuccess={mutateAll} />
+          </div>
+        )}
       </div>
     );
   }
