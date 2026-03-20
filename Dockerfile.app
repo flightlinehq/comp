@@ -42,13 +42,12 @@ COPY packages ./packages
 COPY apps/app ./apps/app
 COPY --from=deps /app/node_modules ./node_modules
 
-# Build workspace packages that app depends on
-RUN cd packages/auth && bun run build
-RUN cd packages/company && bun run build
-
-# Pre-combine schemas for app build
+# Generate Prisma client and build workspace packages
 RUN cd packages/db && node scripts/combine-schemas.js
 RUN cp packages/db/dist/schema.prisma apps/app/prisma/schema.prisma
+RUN bunx prisma generate --schema=packages/db/dist/schema.prisma
+RUN cd packages/auth && bun run build
+RUN cd packages/company && bun run build
 
 ARG NEXT_PUBLIC_BETTER_AUTH_URL
 ARG NEXT_PUBLIC_PORTAL_URL
