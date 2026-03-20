@@ -6,7 +6,7 @@ import { emailExtension } from './emailExtension';
 import { integrationPlatformExtension } from './integrationPlatformExtension';
 
 export default defineConfig({
-  project: 'proj_zhioyrusqertqgafqgpj', // API project
+  project: 'proj_oyxldktyixofjpyzdsua', // API project (cloud.trigger.dev)
   logLevel: 'log',
   instrumentations: [new PrismaInstrumentation()],
   maxDuration: 300, // 5 minutes
