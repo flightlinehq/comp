@@ -8,7 +8,10 @@ import {
   IsArray,
   IsDateString,
   IsObject,
+  ValidateNested,
+  Allow,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export enum PolicyStatus {
   DRAFT = 'draft',
@@ -82,7 +85,15 @@ export class CreatePolicyDto {
     items: { type: 'object', additionalProperties: true },
   })
   @IsArray()
-  @Transform(({ value }) => value)
+  @Transform(({ value }) => {
+    // Preserve raw TipTap JSON - whitelist validation would strip nested objects
+    if (Array.isArray(value)) {
+      return value.map((item: unknown) =>
+        typeof item === 'object' && item !== null ? JSON.parse(JSON.stringify(item)) : item,
+      );
+    }
+    return value;
+  })
   content: unknown[];
 
   @ApiProperty({
