@@ -7,14 +7,12 @@ import { fetch as azureFetch } from './azure/src';
 import type { GCPCredentials } from './gcp/src';
 import { fetch as gcpFetch } from './gcp/src';
 
+import type { GitHubCredentials } from './github/src';
+import { fetch as githubFetch } from './github/src';
+
 // Add Deel credentials type
 interface DeelCredentials {
   api_key: string;
-}
-
-// Add GitHub credentials type
-interface GitHubCredentials {
-  GITHUB_TOKEN: string;
 }
 
 // Define the EncryptedData type locally to avoid import issues
@@ -174,14 +172,12 @@ handlers.set('deel', {
 // Initialize GitHub handler
 handlers.set('github', {
   id: 'github',
-  // Placeholder for now - will be used by automations
-  fetch: async (credentials: GitHubCredentials): Promise<IntegrationFinding[]> => {
-    return []; // GitHub integration is primarily for automation access
-  },
+  fetch: githubFetch,
   processCredentials: async (encryptedSettings, decrypt) => {
     const decrypted = await decryptSettings(encryptedSettings, decrypt);
     return {
-      GITHUB_TOKEN: decrypted.GITHUB_TOKEN,
+      GITHUB_TOKEN: String(decrypted.GITHUB_TOKEN || ''),
+      GITHUB_REPOS: decrypted.GITHUB_REPOS ? String(decrypted.GITHUB_REPOS) : undefined,
     } as GitHubCredentials;
   },
 });

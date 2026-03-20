@@ -31,24 +31,35 @@ const config: {
   id: 'github',
   active: true,
   logo: Logo,
-  short_description: 'Store GitHub credentials for use in automations.',
+  short_description: 'Automated SOC 2 security checks for GitHub repositories.',
   guide_url: 'https://trycomp.ai/docs/cloud-tests/github',
   description:
-    'This allows AI automations to check repository settings like Dependabot status, branch protection rules, and pull request configurations.',
+    'Checks GitHub repository security settings including branch protection rules, Dependabot alerts, secret scanning, code scanning (CodeQL), repository visibility, signed commits, CODEOWNERS files, and pull request review requirements.',
   images: [],
   settings: [
     {
       id: 'GITHUB_TOKEN',
       label: 'Personal Access Token',
-      description: 'Your GitHub personal access token with required permissions',
+      description:
+        'GitHub personal access token with repo, security_events, and admin:org scopes',
       type: 'text',
       required: true,
       value: '',
       placeholder: 'ghp_xxxxxxxxxxxx',
     },
+    {
+      id: 'GITHUB_REPOS',
+      label: 'Repositories (optional)',
+      description:
+        'Comma-separated list of repository names to check (e.g. owner/repo1, owner/repo2). Leave empty to check all accessible repositories.',
+      type: 'text',
+      required: false,
+      value: '',
+      placeholder: 'owner/repo1, owner/repo2',
+    },
   ],
   category: 'Development',
-  sync: false, // This integration doesn't sync on a schedule
+  sync: true,
   // Use the fetch method from the handler
   fetch: githubHandler?.fetch,
 };
