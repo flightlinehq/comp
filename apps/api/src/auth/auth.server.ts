@@ -53,6 +53,10 @@ export function getTrustedOrigins(): string[] {
     'https://portal.staging.trycomp.ai',
     'https://api.staging.trycomp.ai',
     'https://dev.trycomp.ai',
+    // Railway deployment URLs
+    'https://app-production-a557.up.railway.app',
+    'https://portal-production-1172.up.railway.app',
+    'https://api-production-a137.up.railway.app',
   ];
 }
 
