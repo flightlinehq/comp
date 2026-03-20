@@ -81,3 +81,4 @@ COPY --from=portal-builder /app/apps/portal/public ./apps/portal/public
 EXPOSE 3000
 CMD ["node", "apps/portal/server.js"]
 # Rebuild 1773989852
+# API live rebuild 1773992574
