@@ -10,6 +10,9 @@ import { fetch as gcpFetch } from './gcp/src';
 import type { GitHubCredentials } from './github/src';
 import { fetch as githubFetch } from './github/src';
 
+import type { GoogleWorkspaceCredentials } from './google-workspace/src';
+import { fetch as googleWorkspaceFetch } from './google-workspace/src';
+
 // Add Deel credentials type
 interface DeelCredentials {
   api_key: string;
@@ -182,6 +185,20 @@ handlers.set('github', {
   },
 });
 
+// Initialize Google Workspace handler
+handlers.set('google-workspace', {
+  id: 'google-workspace',
+  fetch: googleWorkspaceFetch,
+  processCredentials: async (encryptedSettings, decrypt) => {
+    const decrypted = await decryptSettings(encryptedSettings, decrypt);
+    return {
+      service_account_key: String(decrypted.service_account_key || ''),
+      admin_email: String(decrypted.admin_email || ''),
+      domain: String(decrypted.domain || ''),
+    } as GoogleWorkspaceCredentials;
+  },
+});
+
 // Add additional integration handlers as needed
 
 // Get an integration handler by ID
@@ -192,4 +209,4 @@ export const getIntegrationHandler = <T>(
 };
 
 // Export types
-export type { AWSCredentials, AzureCredentials, DecryptFunction, EncryptedData, GCPCredentials };
+export type { AWSCredentials, AzureCredentials, DecryptFunction, EncryptedData, GCPCredentials, GoogleWorkspaceCredentials };
