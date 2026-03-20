@@ -78,16 +78,17 @@ EXPOSE 3333
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3333/v1/health || exit 1
 
-# Symlink workspace packages into node_modules so runtime can resolve them
+# Copy workspace packages into node_modules (symlinks unreliable across Docker stages)
 RUN mkdir -p node_modules/@trycompai && \
-    ln -sf /app/packages/db node_modules/@trycompai/db && \
-    ln -sf /app/packages/auth node_modules/@trycompai/auth && \
-    ln -sf /app/packages/email node_modules/@trycompai/email && \
-    ln -sf /app/packages/company node_modules/@trycompai/company && \
-    ln -sf /app/packages/utils node_modules/@trycompai/utils && \
-    ln -sf /app/packages/kv node_modules/@trycompai/kv && \
-    ln -sf /app/packages/integration-platform node_modules/@trycompai/integration-platform && \
-    ln -sf /app/packages/integrations node_modules/@trycompai/integrations && \
+    rm -rf node_modules/@trycompai/db && cp -r packages/db node_modules/@trycompai/db && \
+    rm -rf node_modules/@trycompai/auth && cp -r packages/auth node_modules/@trycompai/auth && \
+    rm -rf node_modules/@trycompai/email && cp -r packages/email node_modules/@trycompai/email && \
+    rm -rf node_modules/@trycompai/company && cp -r packages/company node_modules/@trycompai/company && \
+    rm -rf node_modules/@trycompai/utils && cp -r packages/utils node_modules/@trycompai/utils && \
+    rm -rf node_modules/@trycompai/kv && cp -r packages/kv node_modules/@trycompai/kv && \
+    rm -rf node_modules/@trycompai/integration-platform && cp -r packages/integration-platform node_modules/@trycompai/integration-platform && \
+    rm -rf node_modules/@trycompai/integrations && cp -r packages/integrations node_modules/@trycompai/integrations && \
+    echo "=== Verifying @trycompai/db/dist ===" && ls node_modules/@trycompai/db/dist/index.js && \
     npx prisma generate --schema=prisma/schema.prisma
 
 CMD ["node", "dist/src/main.js"]
