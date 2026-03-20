@@ -1,0 +1,80 @@
+# =============================================================================
+# STAGE 1: Dependencies
+# =============================================================================
+FROM oven/bun:1.2.8 AS deps
+
+WORKDIR /app
+
+COPY package.json bun.lock ./
+
+COPY packages/kv/package.json ./packages/kv/
+COPY packages/ui/package.json ./packages/ui/
+COPY packages/email/package.json ./packages/email/
+COPY packages/integration-platform/package.json ./packages/integration-platform/
+COPY packages/integrations/package.json ./packages/integrations/
+COPY packages/utils/package.json ./packages/utils/
+COPY packages/tsconfig/package.json ./packages/tsconfig/
+COPY packages/analytics/package.json ./packages/analytics/
+COPY packages/auth/package.json ./packages/auth/
+COPY packages/company/package.json ./packages/company/
+COPY packages/db/package.json ./packages/db/
+COPY packages/device-agent/package.json ./packages/device-agent/
+COPY packages/docs/package.json ./packages/docs/
+
+COPY apps/api/package.json ./apps/api/
+COPY apps/app/package.json ./apps/app/
+COPY apps/portal/package.json ./apps/portal/
+
+RUN PRISMA_SKIP_POSTINSTALL_GENERATE=true bun install --ignore-scripts
+
+# =============================================================================
+# STAGE 2: Build
+# =============================================================================
+FROM deps AS builder
+
+WORKDIR /app
+
+COPY packages ./packages
+COPY apps/api ./apps/api
+COPY --from=deps /app/node_modules ./node_modules
+
+# Generate Prisma client and build workspace packages
+RUN cd packages/db && node scripts/combine-schemas.js
+RUN cp packages/db/dist/schema.prisma apps/api/prisma/schema.prisma
+RUN bunx prisma generate --schema=packages/db/dist/schema.prisma
+RUN cd packages/utils && bun run build || true
+RUN cd packages/kv && bun run build || true
+RUN cd packages/email && bun run build || true
+RUN cd packages/auth && bun run build
+RUN cd packages/company && bun run build
+RUN cd packages/analytics && bun run build || true
+RUN cd packages/integration-platform && bun run build || true
+RUN cd packages/device-agent && bun run build || true
+RUN cd packages/db && bun run build || true
+
+# Build the NestJS API
+RUN cd apps/api && bun run build:docker
+
+# =============================================================================
+# STAGE 3: Production
+# =============================================================================
+FROM node:22-alpine
+
+RUN apk add --no-cache wget openssl
+
+WORKDIR /app
+
+COPY --from=builder /app/apps/api/dist ./dist
+COPY --from=builder /app/apps/api/package.json ./
+COPY --from=builder /app/apps/api/prisma ./prisma
+COPY --from=builder /app/node_modules ./node_modules
+
+ENV NODE_ENV=production
+ENV PORT=3333
+
+EXPOSE 3333
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3333/v1/health || exit 1
+
+CMD ["node", "dist/main.js"]
