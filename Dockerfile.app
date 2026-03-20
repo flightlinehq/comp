@@ -96,3 +96,4 @@ COPY --from=app-builder /app/apps/app/public ./apps/app/public
 
 EXPOSE 3000
 CMD ["node", "apps/app/server.js"]
+# Rebuild trigger 1773989142
