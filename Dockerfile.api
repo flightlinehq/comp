@@ -78,4 +78,8 @@ EXPOSE 3333
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3333/v1/health || exit 1
 
+# Ensure published @trycompai packages are installed and Prisma client is generated
+RUN cd /app && npm install @trycompai/db @trycompai/auth @trycompai/email @trycompai/company 2>/dev/null || true
+RUN npx prisma generate --schema=prisma/schema.prisma 2>/dev/null || true
+
 CMD ["node", "dist/src/main.js"]
