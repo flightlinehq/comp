@@ -42,6 +42,10 @@ COPY packages ./packages
 COPY apps/app ./apps/app
 COPY --from=deps /app/node_modules ./node_modules
 
+# Build workspace packages that app depends on
+RUN cd packages/auth && bun run build
+RUN cd packages/company && bun run build
+
 # Pre-combine schemas for app build
 RUN cd packages/db && node scripts/combine-schemas.js
 RUN cp packages/db/dist/schema.prisma apps/app/prisma/schema.prisma
