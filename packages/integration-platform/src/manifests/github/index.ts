@@ -27,37 +27,27 @@ export const manifest: IntegrationManifest = {
   },
 
   auth: {
-    type: 'oauth2',
+    type: 'api_key',
     config: {
-      authorizeUrl: 'https://github.com/login/oauth/authorize',
-      tokenUrl: 'https://github.com/login/oauth/access_token',
-      scopes: ['read:org', 'repo', 'read:user'],
-      pkce: false,
-      clientAuthMethod: 'body',
-      revoke: {
-        // Revoke the *grant* (app authorization), not just a single token.
-        // This forces GitHub to show a fresh authorization flow on reconnect.
-        url: 'https://api.github.com/applications/{CLIENT_ID}/grant',
-        method: 'DELETE',
-        auth: 'basic',
-        body: 'json',
-        tokenField: 'access_token',
-      },
-      // GitHub tokens don't expire - they're valid until revoked
-      supportsRefreshToken: false,
-      authorizationParams: {
-        allow_signup: 'false',
-      },
-      setupInstructions: `To create a GitHub OAuth App:
-1. Go to GitHub Settings > Developer settings > OAuth Apps
-2. Click "New OAuth App"
-3. Set "Application name" to something descriptive (e.g., "CompAI Integration")
-4. Set "Homepage URL" to your application URL
-5. Set "Authorization callback URL" to the callback URL shown below
-6. Click "Register application"
-7. Copy the Client ID
-8. Generate and copy a Client Secret`,
-      createAppUrl: 'https://github.com/settings/developers',
+      fields: [
+        {
+          key: 'token',
+          label: 'Personal Access Token',
+          description: 'GitHub PAT with repo, read:org, and security_events scopes',
+          type: 'password',
+          required: true,
+          placeholder: 'github_pat_...',
+        },
+      ],
+      headerName: 'Authorization',
+      headerPrefix: 'Bearer',
+      setupInstructions: `To create a GitHub Personal Access Token:
+1. Go to GitHub Settings > Developer settings > Personal access tokens > Fine-grained tokens
+2. Click "Generate new token"
+3. Select the repositories you want to monitor
+4. Grant read access to: Contents, Metadata, Administration, Secret scanning alerts, Dependabot alerts, Code scanning alerts
+5. Click "Generate token" and copy it`,
+      createAppUrl: 'https://github.com/settings/tokens?type=beta',
     },
   },
 
